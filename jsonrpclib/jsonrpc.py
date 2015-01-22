@@ -113,15 +113,13 @@ class ProtocolError(Exception):
 class TransportMixIn(object):
     """ Just extends the XMLRPC transport where necessary. """
     user_agent = config.user_agent
-    # for Python 2.7 support
-    _connection = None
 
     def send_content(self, connection, request_body):
         connection.putheader("Content-Type", "application/json-rpc")
         connection.putheader("Content-Length", str(len(request_body)))
-        connection.endheaders()
-        if request_body:
-            connection.send(request_body)
+        connection.endheaders(request_body)
+        #if request_body:
+        #    connection.send(request_body)
 
     def getparser(self):
         target = JSONTarget()
@@ -174,10 +172,13 @@ if (USE_UNIX_SOCKETS):
         _connection_class = UnixHTTPConnection
 
     class UnixTransport(TransportMixIn, XMLTransport):
+        def __init__(self):
+            self._connection = (None, None)
+            self._extra_headers = []
         def make_connection(self, host):
             import httplib
             host, extra_headers, x509 = self.get_host_info(host)
-            return UnixHTTP(host)
+            return UnixHTTPConnection(host)
 
     
 class ServerProxy(XMLServerProxy):

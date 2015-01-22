@@ -150,7 +150,9 @@ class SimpleJSONRPCDispatcher(SimpleXMLRPCServer.SimpleXMLRPCDispatcher):
 
 class SimpleJSONRPCRequestHandler(
         SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
-    
+
+    disable_nagle_algorithm = False
+
     def do_POST(self):
         if not self.is_rpc_path_valid():
             self.report_404()
@@ -180,6 +182,13 @@ class SimpleJSONRPCRequestHandler(
         self.wfile.write(response)
         self.wfile.flush()
         self.connection.shutdown(1)
+
+    def log_message(self, format, *args):
+        sys.stderr.write("%s - - [%s] %s\n" % 
+                            (self.client_address, 
+                             self.log_date_time_string(), 
+                             format % args))
+
 
 class SimpleJSONRPCServer(SocketServer.TCPServer, SimpleJSONRPCDispatcher):
 
@@ -213,6 +222,9 @@ class SimpleJSONRPCServer(SocketServer.TCPServer, SimpleJSONRPCDispatcher):
             flags = fcntl.fcntl(self.fileno(), fcntl.F_GETFD)
             flags |= fcntl.FD_CLOEXEC
             fcntl.fcntl(self.fileno(), fcntl.F_SETFD, flags)
+
+    def get_request(self):
+        return self.socket.accept()
 
 class CGIJSONRPCRequestHandler(SimpleJSONRPCDispatcher):
 
